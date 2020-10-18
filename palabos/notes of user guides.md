@@ -19,7 +19,7 @@
 
 - streaming: hard code, only depend on the discrete velocities
 - collide: customized, local operator, realized in a generic way
-- attributing dynamics objects: when constructing a new block-lattice,a shared dynamics object is assigned to each cell. After this, we may need to redefine an independenc dynamics object for some/all cells
+- attributing dynamics objects: when constructing a new block-lattice,a shared dynamics object is assigned to each cell. After this, we may need to redefine an independency dynamics object for some/all cells
 - inheritance diagram:
 
 ![](images/progamming_guide_2020-10-12-22-20-52.png)
