@@ -1,0 +1,2 @@
+
+Checks: 'clang-diagnostic-*,clang-analyzer-*,modernize-*,readab lity-*,-modernize-deprecated-headers,-modernize-use-trailing-return-type'
