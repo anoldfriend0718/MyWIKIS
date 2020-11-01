@@ -7,6 +7,7 @@
     - 在所有打开的文件中跳转： ctrl+shift+Tab
     - 打开文件面板： ctrl+shift+P
     - 跳转到文件符号： ctrl+shift+O
+    - earch for a symbol in the current workspace: ctrl+T
     - 跳转到文件某行： ctrl+shift+G
     - 多光标： Alt+Mouse Click
     - 上下选择多光标： Ctrl+Alt+Up/Down
