@@ -31,6 +31,24 @@ whatis var  //显示变量var的类型
 
 ![](img/gdbOF_2020-11-05-16-25-48.png)
 
+### examples
+
+- view fv matrix and source
+  ![](img/2020-11-06-11-12-40.png)
+  ![](img/gdbOF_2020-11-06-11-25-43.png)
+- view patches list with given geometric Field
+  ![](img/gdbOF_2020-11-06-11-24-49.png)
+- view patch values to check the B.C.
+  ![](img/gdbOF_2020-11-06-11-26-42.png)
+- find cell index with the given coordinations
+  ![](img/gdbOF_2020-11-06-11-14-23.png)
+- print the surface values with specified cell index and surface geometric filed
+  ![](img/gdbOF_2020-11-06-11-18-54.png)
+
+- Field exporting to .vtk by means of pexportfoamformat. Paraview is invoked as
+  well
+  ![](img/gdbOF_2020-11-06-11-21-36.png)
+
 ## practices
 
 ![](img/gdbOF_2020-11-05-16-51-31.png)

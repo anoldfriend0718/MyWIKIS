@@ -1,9 +1,7 @@
 {
     "python.pythonPath": "/usr/bin/python3",
-    {
     "pasteImage.path": "${currentFileDir}/img",
-    "pasteImage.namePrefix": "${currentFileNameWithoutExt}_"
-},
+    "pasteImage.namePrefix": "${currentFileNameWithoutExt}_",
     "files.associations": {
         "*Dict": "OpenFOAM",
         "*Properties": "OpenFOAM",

@@ -81,3 +81,8 @@
 - apt update: update the source info based on /etc/apt/sources.list
 - sudo apt-get update && sudo apt-get upgrade -y
 - install by self: wget, cmake, make, make install
+
+
+## switch users
+- sudo -s : switch to root
+- su - <username>: switch to user
