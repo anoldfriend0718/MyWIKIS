@@ -1,0 +1,58 @@
+
+
+## （OpenFOAM 中的对象注册机制）[https://marinecfd.xyz/post/openfoam-object-registry/]
+对象注册（object registry）机制是OpenFOAM的特点，其在内存中利用树状结构来组织数据，实现数据的管理,输入和输出
+对象注册中树状结构用 objectRegistry和 regIOobject 这两个类的派生类来描述节点。其中根节点和分支节点用 objectRegistry 的派生类描述，叶节点用 regIOobject的派生类描述。其中，objectRegistry 派生自 regIOobject 类，增加了对象管理功能。
+
+一个典型的树状结构如下所示（以 icoFoam 为例）：
+
+runTime                   <-- Time        (objectRegistry)
+└── region0                 <-- fvMesh          (objectRegistry)
+    ├── fvSchemes             <-- IOdictionary        (regIOobject)
+    ├── fvSolution            <-- IOdictionary        (regIOobject)
+    ├── transportProperties   <-- IOdictionary        (regIOobject)
+    ├── data                  <-- data                (regIOobject)
+    ├── solutionControl       <-- pisoControl         (regIOobject)
+    ├── points                <-- pointIOField        (regIOobject)
+    ├── faces                 <-- faceCompactList     (regIOobject)
+    ├── owner                 <-- labelIOList         (regIOobject)
+    ├── neighbour             <-- labelIOList         (regIOobject)
+    ├── boundary              <-- polyBoundaryMesh    (regIOobject)
+    ├── pointZones            <-- pointZoneMesh       (regIOobject)
+    ├── faceZones             <-- faceZoneMesh        (regIOobject)
+    ├── cellZones             <-- cellZoneMesh        (regIOobject)
+    ├── U                     <-- volVectorField      (regIOobject)
+    ├── phi                   <-- surfaceScalarField  (regIOobject)
+    └── p                     <-- volScalarField      (regIOobject)
+
+IOobject 类： 是树状结构中节点属性的集合
+regIOobject 类： 继承自 IOobject，实现check in ，checkout，定义如何从文件读取或写入到文件等读写操作
+objectRegistry 类： objectRegistry 用来作为树状结构的根节点以及分支节点。它继承自 regIOobject，本身也是一个 regIOobject 对象，包含子节点的所有信息，这些信息存在它的另一个父类—— HashTable<regIOobject> 中，哈希表保存了对象名字（word 类型）-对象指针（regIOobject * 类型）的键值对，通过哈希表实现注册对象的查找和返回
+
+
+## (OpenFOAM 中的运行时选择机制)[https://marinecfd.xyz/post/openfoam-runtime-selection/]
+
+运行时选择（run-time selection,RTS） 是OpenFOAM的特点，过运行时（从字典读入）的不同关键字构造不同对象，这些构造的对象类都派生自同一父类，具有一组相同的接口。OpenFOAM 用简单工厂，即在工厂类中提供一个静态函数用来构造所需对象并返回，这个静态函数一般叫 New ，OpenFOAM 称之为 Selector。所有涉及到 RTS 的工厂类（父类）中都可以找到这个函数。OpenFOAM 使用哈希表构造了一个 constructor table，将可构造的对象类存储在这个哈希表中，从而避免了新增具体产品类时对工厂类的修改。以时间离散格式为例，哈希表 IstreamConstructorTablePtr_ 用来存储类名-函数指针的键值对 。同时声明了一个 addIstreamConstructorToTable 类模板，其构造函数首先调用 constructIstreamConstructorTables 构造哈希表，再使用 HashTable::insert 方法往表中添加记录，这些记录用类名 ddtSchemeType::typeName 作为 key，用对应类的 New 函数的函数指针作为 value。在所有的子类中添加上述代码，可以把所有子类的记录都添加到哈希表中。
+上面提到的工厂模式和哈希表已经实现了 RTS 的所有功能，但是我们看到对于每个 RTS 类型（如gradSchemes、divSchemes 等）都需要增加大量的代码，这些代码结构几乎没有区别。OpenFOAM 采用宏定义来压缩这些代码
+比如上面关于哈希表的代码都可以用 declareRunTimeSelectionTable、defineTemplateRunTimeSelectionTable 以及 makeFvDdtTypeScheme 等宏定义展开，具体展开过程这里不再赘述。
+
+## （function object 的实现）[https://marinecfd.xyz/post/openfoam-function-object/]
+
+OpenFOAM 中的 function object 是其提供的比较灵活的数据处理功能，可以在数值计算的同时进行数据处理，OpenFOAM 将其称为运行时数据处理。OpenFOAM 通过 Time 类实现 function object，其在loop 中首先执行了 function objects.其后increase time，表现为在每个时间步solve结束后进行了function object implementation。在具体的调用流程的具体步骤归纳如下：
+
+在第一个时间步内，执行 functionObjects_.start() ；
+在随后的时间步内，执行 functionObjects_.execute()；
+在最后一个时间步内，依次执行 functionObjects_.execute() 和 functionObjects_.end()。
+
+functionObjectList类：成员变量 functionObjects_，这个变量中存储了从 controlDict 中读取的所有 function objects, 就像functionobject的manager
+
+functionObjectList::start(): 调用 read()，从 controlDict 中读取关键词 functions对应的条目，并初始化自身（functionObjectList 继承自 PtrList<functionObject>，是一个由多个 functionObject 组成的列表）。
+functionObjectList::execute(): 遍历所有 function objects 对象，并调用每个对象的 execute() 和 write() 方法。
+functionObjectList::end(): 遍历所有 function objects 对象，并调用每个对象的 end() 方法。
+
+如果字典文件中有 writeControl 或 outputControl （outputControl 是旧版本用的关键词，为了兼容性而保留的），则构造 functionObjects::timeControl 对象（注意这里的 functionObjects 是命名空间）；否则，调用 functionObject 的 New 函数，利用 RTS 构造其派生类对象。
+
+timeControl 是一个在 functionObjects 命名空间 下，派生自 functionObject 的类。该类提供了与时间相关的操作，类中还封装了另一个 functionObject 对象 foPtr_，foPtr_为实际要执行的 function object。
+
+functionObject 的主要成员函数
+我们再来看 functionObject 的三个成员函数 execute()、write() 和 end() 。

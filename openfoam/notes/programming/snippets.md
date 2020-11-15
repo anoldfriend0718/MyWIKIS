@@ -254,3 +254,49 @@ internalField   #codeStream
 
 
 ```
+
+## look up registried objects in Time or Mesh
+
+foundObject，返回是否找到该对象的 Bool 值
+lookupObject，返回对象，只能使用 const 成员函数，
+lookupObjectRef，返回的对象可以使用非 const 成员函数
+
+```cpp
+wordList allFields = this->mesh().sortedNames();
+Info<<"allFields ="<<allFields<<endl;
+this->mesh().objectRegistry::lookupObject<volScalarField>("rho")
+this->mesh().objectRegistry::lookupObject<volVectorField>("U")
+this->mesh().objectRegistry::lookupObject<PtrList<scalarField>>("this->thermo().composition().Y()")
+
+```
+
+### read variables from dictionary
+
+```cpp
+word fuel(dict.lookup("fuel"));
+dimensionedScalar DT(dict.lookup("DT"));
+scalarList Z_param(dict.lookup("Z_param"));
+scalar Sct = readScalar(dict.lookup("Sct"));
+label int_a=readLabel(dict.lookup("int_a"));
+Switch flagg(dict.lookup("flagg"));
+
+```
+
+## look up variables or set default if not presented from dictionary
+
+```cpp
+word fuel2(dict.lookupOrDefault("fuel2",fuel));
+dimensionedScalar DT2(dict.lookupOrDefault("DT2",DT));
+scalarList Z_param2(dict.lookupOrDefault("Z_param2",Z_param));
+scalar Sct2 = dict.lookupOrDefault("Sct2", 9.);
+label int_a2(dict.lookupOrDefault("int_a2", 25));
+Switch flagg2(dict.lookupOrDefault("flagg2",false));
+
+//或者：
+word fuel3(dict.lookupOrDefault<word>("fuel3",fuel));
+dimensionedScalar DT3(dict.lookupOrDefault<dimensionedScalar>("DT3",DT));
+scalarList Z_param3(dict.lookupOrDefault<scalarList>("Z_param3",Z_param));
+scalar Sct3 = dict.lookupOrDefault<scalar>("Sct3", 9.);
+Switch flagg3(dict.lookupOrDefault<Switch>("flagg3",false));
+label int_a3(dict.lookupOrDefault<label>("int_a3", 35));
+```

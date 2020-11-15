@@ -86,3 +86,6 @@
 ## switch users
 - sudo -s : switch to root
 - su - <username>: switch to user
+
+## cp 
+- cp -r --parents: copy folder and create their parent folder in target 
