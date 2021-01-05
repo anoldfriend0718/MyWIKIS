@@ -10,5 +10,7 @@
         "**/constant/g": "OpenFOAM",
         "**/0/*": "OpenFOAM",
         "dbs_pimpleFoamCi_v4.C": "cpp"
-    }
+    },
+    "plantuml.render": "Local",
+    "plantuml.server": "https://www.plantuml.com/plantuml"
 }
