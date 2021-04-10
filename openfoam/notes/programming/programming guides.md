@@ -1,3 +1,18 @@
+## Run Time Selection 机制总结
+
+1. 基类里定义一个 hashTable，其 key 为类的 typeName （static 类型，在类内调用宏 TypeName("typeName")申明，在类外调用宏 defineTypeNameAndDebug 定义） ，value 为一个函数指针，这个函数指针指向的函数的返回值是基类类型的 autoPtr ，并且这个 autoPtr 指向类的一个临时对象（用 C++ 的 new 关键字创建 ）。这些在宏函数 declareRunTimeSelectionTable 中完成。
+
+2. 每创建一个派生类，都会调用一次 addToRunTimeSelectionTable 宏函数。这个宏函数会触发一次 hashTable 的更新操作。具体地说，宏函数的调用，会往基类里定义的 hashTable 插入一组值，这组值的 key 是该派生类的 typeName ，value 是一个函数，该函数返回的是指向派生类临时对象的指针。
+
+3. 类及其派生类编译成库，在编译过程中(通过定义全局变量 add##argNames##ConstructorToTable )，会逐步往 hashTable 增加新元素，直到可选的模型全部添加到其中。
+
+4. 在需要调用这些类的地方，只需要定义基类的 autoPtr，并用基类中定义的 New 函数来初始化，即 autoPtr<AlgorithmBase> algorithmPtr = AlgorithmBase::New(algorithmName);。这样， New 函数就能根据调用的时候所提供的参数（即 hashTable 的 key），来从 hashTable 中选择对应的派生类（即 hashTable 的 value）。
+
+实现 RTS，在基类和派生类需要的：
+基类类体里调用 TypeName 和 declareRunTimeSelectionTable 两个函数，类体外面调用 defineTypeNameAndDebug 和 defineRunTimeSelectionTable 两个函数。
+基类中需要一个静态 New 函数作为 selector。
+派生类类体中需要调用 TypeName 函数，类体外调用 defineTypeNameAndDebug （定义 hashTable 的 key）和 addToRunTimeSelectionTable（定义全局变量 add##argNames##ConstructorToTable ，实现 add typename：new 进入 hashTable） 两个宏函数。
+
 ## Dimensions
 
 ![](img/programming%20guides_2020-11-05-16-31-44.png)

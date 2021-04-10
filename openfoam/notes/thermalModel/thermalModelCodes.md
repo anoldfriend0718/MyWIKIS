@@ -1,6 +1,105 @@
 # Thermal Mode Code
 
 ## Run Time Table
+## 针对组合的Thermo类型的主要的机制
+
+- Take rhoThermos as examples, 编译和构建 hashTable 在 src/thermophysicalModels/basic/rhoThermo/rhoThermos，全部都是在调用宏函数。而且，从宏函数的参数来看，似乎就是个排列组合的游戏，把所有可用的组合都写了一遍
+
+```cpp
+makeThermo
+(
+    rhoThermo,
+    heRhoThermo,
+    pureMixture,
+    constTransport,
+    sensibleInternalEnergy,
+    hConstThermo,
+    perfectGas,
+    specie
+);
+//....
+```
+
+其中，宏函数定义在 src/thermophysicalModels/basic/fluidThermo/makeThermo.H
+
+宏函数的作用是（1）define 组合thermo类型的typeName （static 类型，作为hashTable的key）
+
+```cpp
+defineTemplateTypeNameAndDebugWithName                                        \
+(                                                                             \
+    Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,            \
+    (                                                                         \
+        #Cthermo"<"#Mixture"<"                                                \
+      + Transport##Type##Thermo##EqnOfState##Specie::typeName()               \
+      + ">>"                                                                  \
+    ).c_str(),                                                                \
+    0                                                                         \
+);
+```
+例如，具体过程：
+typeName() 依次调用 reactingMixture，sutherlandTransport, species::thermo, janafThermo, sensibleEnthalpy, perfectGas, specie 的 typeName()。返回值依次是：
+```cpp
+"reactingMixture<" + ThermoType::typeName() + '>'
+sutherland<" + Thermo::typeName() + '>'
+Thermo::typeName() + ',' + Type<thermo<Thermo, Type>>::typeName()
+"janaf<" + EquationOfState::typeName() + '>'
+"sensibleEnthalpy"
+"perfectGas<" + word(Specie::typeName_()) + '>'
+```
+
+作用2是：compose 组合thermo的类型
+```cpp
+typedef                                                                       \
+    Transport                                                                 \
+    <                                                                         \
+        species::thermo                                                       \
+        <                                                                     \
+            Thermo                                                            \
+            <                                                                 \
+                EqnOfState                                                    \
+                <                                                             \
+                    Specie                                                    \
+                >                                                             \
+            >,                                                                \
+            Type                                                              \
+        >                                                                     \
+    > Transport##Type##Thermo##EqnOfState##Specie;                            \
+                                                                              \
+typedef                                                                       \
+    Cthermo                                                                   \
+    <                                                                         \
+        BaseThermo,                                                           \
+        Mixture<Transport##Type##Thermo##EqnOfState##Specie>                  \
+    > Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie; 
+```
+
+
+作用3，得到了 addToRunTimeSelectionTable 宏函数的参数,前面 RTS 机制部分讲过，这个函数的作用就是对 hashTable 增加元素，以
+
+```cpp
+
+addToRunTimeSelectionTable                                                    \
+(                                                                             \
+    BaseThermo,                                                               \
+    Cthermo##Mixture##Transport##Type##Thermo##EqnOfState##Specie,            \
+    fvMesh                                                                    \
+);
+```
+
+调用以后，向 rhoThermo 类中声明的 hashTable 中增加了一组元素，其 key 为 heRhoThermo<pureMixture<const<hConst<perfectGas<specie>>,sensibleInternalEnergy>>> ，value 对应的函数返回的是类
+
+```cpp
+heRhoThermo
+<
+    rhoThermo,
+    pureMixture
+    <
+        constTransport<species::thermo<hConstThermo<perfectGas<specie>>,sensibleInternalEnergy>>
+    >
+>
+```
+
+为例，第一个参数，表示元素将增加到 BaseThermo 类（这里是 rhoThermo ）中声明的 hashTable，第二个参数，表示将要添加的类，添加成功以后，这个类的 typeName 将是 hashTable 的 key，而返回这个类的对象的一个函数，将是 hashTable 的 value。第三个参数对应着 hashTable 对象的名字，fvMesh 对应的 hashTable 对象名为 fvMeshConstructorTable，这与在 rhoThermo 中声明的名字是对应的。
 
 ## makeReactionThermos
 

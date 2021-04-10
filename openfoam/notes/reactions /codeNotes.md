@@ -524,7 +524,7 @@ template<class ReactionThermo>
 Foam::combustionModels::laminar<ReactionThermo>::laminar
 (
     const word& modelType,
-    ReactionThermo& thermo,
+    ReactionThermo& thermo, //for example: rhoReactionThermo
     const compressibleTurbulenceModel& turb,
     const word& combustionProperties
 )
